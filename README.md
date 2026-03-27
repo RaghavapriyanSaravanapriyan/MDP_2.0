@@ -2,25 +2,35 @@
 
 SentinAI is a full-stack deep learning project that identifies individuals from a live camera feed. This system is designed for high accuracy and minimal false positives, suitable for securing a "smart door".
 
-## Key Features
+## Windows Setup (Powershell/CMD)
 
-- **High Accuracy (Facenet512)**: Uses the state-of-the-art Facenet512 model for generating robust face embeddings.
-- **Strict Verification**: Employs conservative distance thresholding to eliminate false positives.
-- **Multi-Shot Training**: Captures 5 distinct frames during registration to build a robust profile for each user.
-- **Premium UI**: A glassmorphic, dark-mode interface with real-time feedback and smooth animations.
-- **Door Control Simulation**: Visual "Locked" and "Unlocked" states based on authorization.
+1.  **Clone/Copy the project** to your local machine.
+2.  **Initialize Virtual Environment**:
+    ```powershell
+    python -m venv venv
+    ```
+3.  **Install Backend Dependencies**:
+    ```powershell
+    .\venv\Scripts\activate
+    pip install -r requirements.txt
+    ```
+4.  **Install Frontend Dependencies**:
+    ```powershell
+    cd frontend
+    npm install
+    cd ..
+    ```
 
 ## How to Run
 
-1.  **Dependencies**: I have already set up a virtual environment and installed all necessary Python and Node.js packages.
-2.  **Start the System**:
-    Run the following command in the project root:
-    ```bash
-    python3 start.py
-    ```
-3.  **Access the Interface**:
-    - Frontend: [http://localhost:5173](http://localhost:5173)
-    - Backend API: [http://localhost:8000](http://localhost:8000)
+Run the following command in the project root:
+```powershell
+python start.py
+```
+
+## Access the Interface
+- Frontend: [http://localhost:5173](http://localhost:5173) (User interface)
+- Backend API: [http://localhost:8000](http://localhost:8000) (Automation API)
 
 ## Usage Instructions
 
@@ -35,12 +45,12 @@ SentinAI is a full-stack deep learning project that identifies individuals from 
 3.  If you are the authorized person, the system will display **"Unlocked"** and show your name.
 4.  If an unauthorized person is detected, the system will display **"Locked"**.
 
-## Verification Status
+## Key Features
 
-- ✅ **Face Detection**: Reliable detection via OpenCV backend.
-- ✅ **Face Recognition**: Facenet512 provides high-dimensional embeddings for precise matching.
-- ✅ **Database**: SQLite correctly stores and retrieves user profiles.
-- ✅ **Real-time Performance**: Optimized polling for smooth camera feed and low-latency detection.
+- **High Accuracy (Facenet512)**: Uses the state-of-the-art Facenet512 model.
+- **Strict Verification**: Employs conservative distance thresholding.
+- **Multi-Shot Training**: Captures 5 distinct frames during registration.
+- **Premium UI**: Glassmorphic, dark-mode interface with real-time feedback.
 
 ---
 > [!IMPORTANT]
