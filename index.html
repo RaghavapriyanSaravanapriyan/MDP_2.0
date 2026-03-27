@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinAI | Precision Face Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #6366f1;
+            box-shadow: 0 0 15px #6366f1;
+            top: 0;
+            animation: scan 3s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        @keyframes scan {
+            0%, 100% { top: 0; opacity: 0; }
+            10%, 90% { opacity: 1; }
+            50% { top: 100%; }
+        }
+
+        .video-mirror {
+            transform: scaleX(-1);
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4 md:p-8">
+    <div id="root" class="w-full max-w-2xl"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        const API_BASE = window.location.origin;
+
+        function App() {
+            const [mode, setMode] = useState('training'); // 'training' or 'detection'
+            const [name, setName] = useState('');
+            const [capturedImages, setCapturedImages] = useState([]);
+            const [isRegistering, setIsRegistering] = useState(false);
+            const [detectionResult, setDetectionResult] = useState(null);
+            
+            const videoRef = useRef(null);
+            const canvasRef = useRef(null);
+
+            // Initialize Camera
+            useEffect(() => {
+                async function setupCamera() {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            video: { width: 1280, height: 720, facingMode: "user" } 
+                        });
+                        if (videoRef.current) {
+                            videoRef.current.srcObject = stream;
+                        }
+                    } catch (err) {
+                        console.error("Camera error:", err);
+                        alert("Please enable camera access.");
+                    }
+                }
+                setupCamera();
+            }, []);
+
+            // Capture Frame
+            const captureFrame = () => {
+                const video = videoRef.current;
+                const canvas = canvasRef.current;
+                if (!video || !canvas) return null;
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                return canvas.toDataURL('image/jpeg', 0.8);
+            };
+
+            // Capture Shot
+            const takeShot = () => {
+                if (capturedImages.length >= 5) return;
+                const img = captureFrame();
+                if (img) setCapturedImages(prev => [...prev, img]);
+            };
+
+            // Register
+            const handleRegister = async () => {
+                if (!name || capturedImages.length < 5) return;
+                setIsRegistering(true);
+                try {
+                    await axios.post(`${API_BASE}/register`, { name, images: capturedImages });
+                    alert("User Registered Successfully!");
+                    setMode('detection');
+                } catch (err) {
+                    alert("Registration failed: " + (err.response?.data?.detail || "Error"));
+                } finally {
+                    setIsRegistering(false);
+                }
+            };
+
+            // Detection Loop
+            useEffect(() => {
+                let interval;
+                if (mode === 'detection') {
+                    interval = setInterval(async () => {
+                        const img = captureFrame();
+                        if (img) {
+                            try {
+                                const res = await axios.post(`${API_BASE}/detect`, { image: img });
+                                setDetectionResult(res.data);
+                            } catch (err) { console.error(err); }
+                        }
+                    }, 1500);
+                }
+                return () => clearInterval(interval);
+            }, [mode]);
+
+            return (
+                <div className="glass-card rounded-3xl p-6 md:p-10 shadow-2xl transition-all duration-500">
+                    <header className="text-center mb-8">
+                        <h1 class="text-4xl font-extrabold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                            SentinAI
+                        </h1>
+                        <p class="text-slate-400 mt-2">Elite Bio-Access Control</p>
+                    </header>
+
+                    <div className="relative aspect-video bg-black rounded-2xl overflow-hidden shadow-inner mb-8 border border-white/10">
+                        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover video-mirror" />
+                        <canvas ref={canvasRef} className="hidden" />
+                        
+                        {mode === 'detection' && <div className="scan-line"></div>}
+                        
+                        {detectionResult && mode === 'detection' && (
+                            <div className={`absolute top-4 right-4 px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2 uppercase tracking-wider backdrop-blur-md border ${detectionResult.match ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'}`}>
+                                <i data-lucide={detectionResult.match ? 'shield-check' : 'shield-alert'} class="w-4 h-4"></i>
+                                {detectionResult.match ? 'Unlocked' : 'Locked'}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-6">
+                        {mode === 'training' ? (
+                            <div className="animate-fade-in">
+                                <h3 className="text-xl font-semibold mb-4 text-center">Identity Enrollment</h3>
+                                <input 
+                                    type="text" 
+                                    placeholder="Enter full name..." 
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 transition-all mb-6"
+                                />
+                                
+                                <div className="flex justify-center gap-3 mb-8">
+                                    {[...Array(5)].map((_, i) => (
+                                        <div key={i} className={`w-12 h-12 rounded-lg border border-white/10 overflow-hidden ${capturedImages[i] ? 'bg-indigo-500/20' : 'bg-white/5'}`}>
+                                            {capturedImages[i] && <img src={capturedImages[i]} className="w-full h-full object-cover video-mirror" />}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <button 
+                                        onClick={takeShot} 
+                                        disabled={capturedImages.length >= 5}
+                                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all transform hover:-translate-y-1"
+                                    >
+                                        <i data-lucide="camera" class="w-5 h-5"></i>
+                                        Capture ({capturedImages.length}/5)
+                                    </button>
+                                    <button 
+                                        onClick={handleRegister} 
+                                        disabled={capturedImages.length < 5 || !name || isRegistering}
+                                        className="flex-1 bg-white/10 hover:bg-white/20 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-all transform hover:-translate-y-1"
+                                    >
+                                        {isRegistering ? <i data-lucide="loader-2" class="w-5 h-5 spinner"></i> : <i data-lucide="user-plus" class="w-5 h-5"></i>}
+                                        Continue
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center animate-fade-in">
+                                <h3 className={`text-2xl font-bold mb-2 ${detectionResult?.match ? 'text-green-400' : 'text-white'}`}>
+                                    {detectionResult?.match ? `Welcome, ${detectionResult.name}` : 'Scanning Identity...'}
+                                </h3>
+                                <p className="text-slate-400 mb-8">{detectionResult?.status || 'Active Surveillance'}</p>
+                                
+                                <button 
+                                    onClick={() => { setMode('training'); setCapturedImages([]); setName(''); setDetectionResult(null); }}
+                                    className="bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-xl flex items-center justify-center gap-2 mx-auto transition-all transform hover:-translate-y-1"
+                                >
+                                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                                    New Training
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        // Refresh icons after render
+        setTimeout(() => lucide.createIcons(), 500);
+    </script>
+</body>
+</html>

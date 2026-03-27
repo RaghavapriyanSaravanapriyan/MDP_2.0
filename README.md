@@ -1,36 +1,25 @@
 # SentinAI: High-Accuracy Face Access Control
 
-SentinAI is a full-stack deep learning project that identifies individuals from a live camera feed. This system is designed for high accuracy and minimal false positives, suitable for securing a "smart door".
+SentinAI is a full-stack deep learning project that identifies individuals from a live camera feed. This version is **Python-only** and does not require Node.js or npm.
 
-## Windows Setup (Powershell/CMD)
+## Windows One-Click Setup
 
 1.  **Clone/Copy the project** to your local machine.
-2.  **Initialize Virtual Environment**:
+2.  **Run the Setup Script**:
     ```powershell
-    python -m venv venv
+    python setup.py
     ```
-3.  **Install Backend Dependencies**:
-    ```powershell
-    .\venv\Scripts\activate
-    pip install -r requirements.txt
-    ```
-4.  **Install Frontend Dependencies**:
-    ```powershell
-    cd frontend
-    npm install
-    cd ..
-    ```
+    This will automatically create a virtual environment and install all necessary dependencies.
 
 ## How to Run
 
-Run the following command in the project root:
+After setup, run the following command in the project root:
 ```powershell
 python start.py
 ```
 
 ## Access the Interface
-- Frontend: [http://localhost:5173](http://localhost:5173) (User interface)
-- Backend API: [http://localhost:8000](http://localhost:8000) (Automation API)
+- UI & API: [http://localhost:8000](http://localhost:8000)
 
 ## Usage Instructions
 
@@ -48,9 +37,9 @@ python start.py
 ## Key Features
 
 - **High Accuracy (Facenet512)**: Uses the state-of-the-art Facenet512 model.
-- **Strict Verification**: Employs conservative distance thresholding.
-- **Multi-Shot Training**: Captures 5 distinct frames during registration.
-- **Premium UI**: Glassmorphic, dark-mode interface with real-time feedback.
+- **No Node.js Required**: The frontend is a single-file React/Tailwind implementation served directly via FastAPI.
+- **Elite UI**: Glassmorphic, dark-mode interface with real-time feedback and smooth animations.
+- **Bio-Access Logic**: Secure threshold-based verification for elite security.
 
 ---
 > [!IMPORTANT]

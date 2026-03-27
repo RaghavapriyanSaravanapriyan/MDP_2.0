@@ -1,14 +1,15 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import database
 import face_logic
 from sqlalchemy.orm import Session
-import json
+import os
 
 app = FastAPI()
 
-# CORS for frontend access
+# CORS for external access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,12 +23,17 @@ app.add_middleware(
 def startup():
     database.init_db()
 
+# Serve Frontend
+@app.get("/")
+async def get_frontend():
+    return FileResponse("index.html")
+
 class RegisterRequest(BaseModel):
     name: str
-    images: list[str] # List of base64 images
+    images: list[str]
 
 class DetectRequest(BaseModel):
-    image: str # Base64 image
+    image: str
 
 @app.post("/register")
 async def register(req: RegisterRequest):
@@ -43,12 +49,10 @@ async def register(req: RegisterRequest):
     if not embeddings:
         raise HTTPException(status_code=400, detail="Could not detect any faces in the provided images")
     
-    # Store in DB
     db = database.SessionLocal()
     try:
         user = db.query(database.User).filter(database.User.name == req.name).first()
         if user:
-            # Update embeddings
             user.embeddings = embeddings
         else:
             user = database.User(name=req.name, embeddings=embeddings)
@@ -60,7 +64,7 @@ async def register(req: RegisterRequest):
     finally:
         db.close()
         
-    return {"message": f"User {req.name} registered successfully with {len(embeddings)} embeddings."}
+    return {"message": f"User {req.name} registered successfully."}
 
 @app.post("/detect")
 async def detect(req: DetectRequest):
